@@ -75,6 +75,13 @@ namespace UnityEngine.Rendering.PostProcessing
         public bool stopNaNPropagation = true;
 
         /// <summary>
+        /// AE: I added this, so default behaviour for regenerating settings and volumes can be maintained.
+        /// However, it was also added to fix shitty performance, because of regenerating settings all
+        /// the f****** time.
+        /// </summary>
+        public bool autoUpdateVolumeAndSettings = true;
+
+        /// <summary>
         /// If <c>true</c>, it will render straight to the backbuffer and save the final blit done
         /// by the engine. This has less overhead and will improve performance on lower-end platforms
         /// (like mobiles) but breaks compatibility with legacy image effect that use OnRenderImage.
@@ -1074,7 +1081,10 @@ namespace UnityEngine.Rendering.PostProcessing
             // End frame cleanup
             TextureLerper.instance.EndFrame();
             debugLayer.EndFrame();
-            m_SettingsUpdateNeeded = true;
+            
+            if (autoUpdateVolumeAndSettings)
+                m_SettingsUpdateNeeded = true;
+            
             m_NaNKilled = false;
         }
 
@@ -1380,6 +1390,11 @@ namespace UnityEngine.Rendering.PostProcessing
             bool autoExpo = GetBundle<AutoExposure>().settings.IsEnabledAndSupported(context);
             bool lightMeter = debugLayer.lightMeter.IsRequestedAndSupported(context);
             return autoExpo || lightMeter;
+        }
+
+        public void MarkSettingsAndVolumeAsDirty()
+        {
+            m_SettingsUpdateNeeded = true;
         }
     }
 }
