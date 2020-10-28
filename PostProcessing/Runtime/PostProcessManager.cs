@@ -308,7 +308,9 @@ namespace UnityEngine.Rendering.PostProcessing
                 int count = settings.parameters.Count;
 
                 for (int i = 0; i < count; i++)
+                {
                     target.parameters[i].SetValue(settings.parameters[i]);
+                }
             }
         }
 

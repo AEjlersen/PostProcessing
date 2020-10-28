@@ -209,6 +209,7 @@ namespace UnityEngine.Rendering.PostProcessing
         LogHistogram m_LogHistogram;
 
         bool m_SettingsUpdateNeeded = true;
+        bool m_TargetPoolUpdateNeed = true;
         bool m_IsRenderingInSceneView = false;
 
         TargetPool m_TargetPool;
@@ -549,7 +550,7 @@ namespace UnityEngine.Rendering.PostProcessing
             var aoRenderer = aoBundle.CastRenderer<AmbientOcclusionRenderer>();
 
             bool aoSupported = aoSettings.IsEnabledAndSupported(context);
-            bool aoAmbientOnly = aoRenderer.IsAmbientOnly(context);
+            bool aoAmbientOnly = aoSupported && aoRenderer.IsAmbientOnly(context);
             bool isAmbientOcclusionDeferred = aoSupported && aoAmbientOnly;
             bool isAmbientOcclusionOpaque = aoSupported && !aoAmbientOnly;
 
@@ -897,20 +898,25 @@ namespace UnityEngine.Rendering.PostProcessing
         /// <param name="cmd">A command buffer to fill.</param>
         public void UpdateVolumeSystem(Camera cam, CommandBuffer cmd)
         {
+            cmd.BeginSample("VolumeBlending");
+            
             if (m_SettingsUpdateNeeded)
             {
-                cmd.BeginSample("VolumeBlending");
                 PostProcessManager.instance.UpdateSettings(this, cam);
-                cmd.EndSample("VolumeBlending");
-                m_TargetPool.Reset();
-
+  
                 // TODO: fix me once VR support is in SRP
                 // Needed in SRP so that _RenderViewportScaleFactor isn't 0
                 if (RuntimeUtilities.scriptableRenderPipelineActive)
                     Shader.SetGlobalFloat(ShaderIDs.RenderViewportScaleFactor, 1f);
             }
-
+            
+            cmd.EndSample("VolumeBlending");
+            
+            if (m_TargetPoolUpdateNeed)
+                m_TargetPool.Reset();
+            
             m_SettingsUpdateNeeded = false;
+            m_TargetPoolUpdateNeed = false;
         }
 
         /// <summary>
@@ -1084,7 +1090,8 @@ namespace UnityEngine.Rendering.PostProcessing
             
             if (autoUpdateVolumeAndSettings)
                 m_SettingsUpdateNeeded = true;
-            
+
+            m_TargetPoolUpdateNeed = true;
             m_NaNKilled = false;
         }
 
@@ -1395,6 +1402,7 @@ namespace UnityEngine.Rendering.PostProcessing
         public void MarkSettingsAndVolumeAsDirty()
         {
             m_SettingsUpdateNeeded = true;
+            m_TargetPoolUpdateNeed = true;
         }
     }
 }
